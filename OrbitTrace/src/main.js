@@ -3,8 +3,7 @@ import vertexShader from '/src/shaders/vertex.glsl?raw'
 import fragmentShader from '/src/shaders/fragment.glsl?raw'
 import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
-
-
+import './style.css'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -12,13 +11,40 @@ const renderer = new THREE.WebGLRenderer({antialias: true})
 renderer.setSize(innerWidth, innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio)
 document.body.appendChild(renderer.domElement)
+const orbitTraceLoadingScreen = document.getElementById('orbitTraceLoadingScreen')
+const loadingProgress = document.getElementById('loadingProgress')
+const loadingPercent = document.getElementById('loadingPercent')
+const textureLoader = new THREE.TextureLoader()
+
+const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
+  () => {
+    loadingProgress.style.width = '100%'
+    loadingPercent.textContent = '100%'
+
+    setTimeout(() => {
+      orbitTraceLoadingScreen.style.opacity = '0'
+      setTimeout(() => {
+        orbitTraceLoadingScreen.remove()
+      }, 1000)
+    }, 600)
+  },
+  (progress) => {
+    if(progress.total > 0) {
+      const percent = Math.round((progress.loaded / progress.total) * 100)
+      loadingProgress.style.width = `${percent}%`
+      loadingPercent.textContent = `${percent}%`
+    }
+  }, (error) => {
+    console.error('Failed to load Earth Texture:', error)
+  }
+)
+
 
 const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), new THREE.ShaderMaterial({
   vertexShader, fragmentShader,
   uniforms: {
-    globeTexture: {value: new THREE.TextureLoader().load('/src/assets/earthMap.png')}
+    globeTexture: {value: globeTexture}
   }
-
 }))
 
 
