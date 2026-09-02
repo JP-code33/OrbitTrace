@@ -3,7 +3,7 @@ import vertexShader from '/src/shaders/vertex.glsl?raw'
 import fragmentShader from '/src/shaders/fragment.glsl?raw'
 import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
-import gsap from 'gsap'
+
 
 
 const scene = new THREE.Scene()
@@ -54,21 +54,38 @@ const stars = new THREE.Points(starGeometry, starMaterial)
 scene.add(stars)
 
 
-const mouse = {x: undefined, y: undefined}
+const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false}
 
 camera.position.z = 15
 function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
-  sphere.rotation.y += 0.001
-  gsap.to(group.rotation, {
-    x: -mouse.y * 0.2,
-    y: mouse.x * 0.5, duration: 2
-  })
+  if(!mouse.isDragging) {
+    sphere.rotation.y += 0.001
+  }
 }
 animate()
 
-addEventListener('mousemove', () => {
-  mouse.x = (event.clientX / innerWidth) * 2 -1 
-  mouse.y = -(event.clientY / innerHeight) * 2 + 1
+addEventListener('mousedown', (event) => {
+  if(event.button === 0) {
+    mouse.isDragging = true
+    mouse.previousX = event.clientX
+    mouse.previousY = event.clientY
+  }
+})
+
+addEventListener('mouseup', (event) => {
+  if(event.button === 0) {
+    mouse.isDragging = false
+  }
+})
+
+addEventListener('mousemove', (event) => {
+  if(!mouse.isDragging) return
+  const deltaX = event.clientX - mouse.previousX
+  const deltaY = event.clientY - mouse.previousY
+  group.rotation.y += deltaX * 0.005
+  group.rotation.x += deltaY * 0.005
+  mouse.previousX = event.clientX
+  mouse.previousY = event.clientY
 })
