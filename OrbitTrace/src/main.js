@@ -5,7 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { StaticElement } from 'three/examples/jsm/transpiler/AST.js'
+
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -61,17 +61,16 @@ const atmosphere = new THREE.Mesh(
 )
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
-scene.add(atmosphere)
+
 
 const satelliteGeometry = new THREE.SphereGeometry(0.036, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
-scene.add(satelliteMarker)
 
-function updateSatellitePosition(marker, latitude, longitude, alitude) {
+function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
   const altitudeScale = 5 / 6371
-  const radius = earthRadius + alitude + altitudeScale
+  const radius = earthRadius + altitude * altitudeScale
   const lat = new THREE.MathUtils.degToRad(latitude)
   const lon = new THREE.MathUtils.degToRad(longitude)
   marker.position.x = radius * Math.sin(lat) * Math.sin(lon)
@@ -81,7 +80,10 @@ function updateSatellitePosition(marker, latitude, longitude, alitude) {
 
 const group = new THREE.Group()
 group.add(sphere)
+group.add(atmosphere)
+group.add(satelliteMarker)
 scene.add(group)
+
 
 const starGeometry = new THREE.BufferGeometry()
 const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
@@ -105,7 +107,7 @@ function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
   if(!mouse.isDragging) {
-    sphere.rotation.y += 0.0005
+    group.rotation.y += 0.0005
   }
 }
 animate()
