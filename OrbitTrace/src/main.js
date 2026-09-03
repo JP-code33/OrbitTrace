@@ -4,6 +4,8 @@ import fragmentShader from '/src/shaders/fragment.glsl?raw'
 import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
+import * as satellite from 'satellite.js'
+import { StaticElement } from 'three/examples/jsm/transpiler/AST.js'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -61,6 +63,22 @@ const atmosphere = new THREE.Mesh(
 atmosphere.scale.set(1.1, 1.1, 1.1)
 scene.add(atmosphere)
 
+const satelliteGeometry = new THREE.SphereGeometry(0.036, 8, 8)
+const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
+const satelliteMarker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
+scene.add(satelliteMarker)
+
+function updateSatellitePosition(marker, latitude, longitude, alitude) {
+  const earthRadius = 5
+  const altitudeScale = 5 / 6371
+  const radius = earthRadius + alitude + altitudeScale
+  const lat = new THREE.MathUtils.degToRad(latitude)
+  const lon = new THREE.MathUtils.degToRad(longitude)
+  marker.position.x = radius * Math.sin(lat) * Math.sin(lon)
+  marker.position.y = radius * Math.cos(lat)
+  marker.position.z = radius * Math.cos(lat) * Math.cos(lon)
+}
+
 const group = new THREE.Group()
 group.add(sphere)
 scene.add(group)
@@ -87,7 +105,7 @@ function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
   if(!mouse.isDragging) {
-    sphere.rotation.y += 0.001
+    sphere.rotation.y += 0.0005
   }
 }
 animate()
@@ -115,3 +133,42 @@ addEventListener('mousemove', (event) => {
   mouse.previousX = event.clientX
   mouse.previousY = event.clientY
 })
+
+async function loadSatelliteData() {
+  try {
+    const response = await fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE`)
+    if(!response.ok) {
+      throw new Error(`Satellite data request failed: ${response.status}`)
+      }
+      const tleText = await response.text()
+      
+      console.log('ISS TLE: ')
+      console.log(tleText)
+      const lines = tleText.trim().split('\n')
+      const name = lines[0].trim()
+      const line1 = lines[1].trim()
+      const line2 = lines[2].trim()
+      console.log('Name:', name)
+      console.log('Line 1:', line1)
+      console.log('Line 2:', line2)
+
+      const satrec = satellite.twoline2satrec(line1, line2)
+      const now = new Date()
+      const gmst = satellite.gstime(now)
+      const positionAndVelocity = satellite.propagate(satrec, now)
+      const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
+      const latitude = satellite.degreesLat(positionGd.latitude)
+      const longitude = satellite.degreesLong(positionGd.longitude)
+      const altitude = positionGd.height
+      updateSatellitePosition(satelliteMarker, latitude, longitude, altitude)
+
+      console.log('ISS position:')
+      console.log('Latitude:', latitude)
+      console.log('Longitude:', longitude)
+      console.log('Altitude:', altitude)
+  } catch (error) {
+    console.log('Failed to load satellite data:', error)
+  }
+}
+
+loadSatelliteData()
