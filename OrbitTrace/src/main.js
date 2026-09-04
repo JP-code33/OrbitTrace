@@ -5,6 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
+import { OrbitControls } from 'three/examples/jsm/Addons.js'
 
 
 const scene = new THREE.Scene()
@@ -17,6 +18,15 @@ const orbitTraceLoadingScreen = document.getElementById('orbitTraceLoadingScreen
 const loadingProgress = document.getElementById('loadingProgress')
 const loadingPercent = document.getElementById('loadingPercent')
 const textureLoader = new THREE.TextureLoader()
+
+const controls = new OrbitControls(camera, renderer.domElement)
+controls.enableDamping = true
+controls.dampingFactor = 0.09
+controls.minDistance = 7
+controls.maxDistance = 32
+controls.target.set(0, 0, 0)
+camera.position.set(0, 0, 15)
+controls.update()
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -63,27 +73,24 @@ const atmosphere = new THREE.Mesh(
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
 
-const satelliteGeometry = new THREE.SphereGeometry(0.036, 8, 8)
-const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
+const satelliteGeometry = new THREE.SphereGeometry(0.09, 8, 8)
+const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00, depthTest: false})
 const satelliteMarker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
   const altitudeScale = 5 / 6371
   const radius = earthRadius + altitude * altitudeScale
-  const lat = new THREE.MathUtils.degToRad(latitude)
-  const lon = new THREE.MathUtils.degToRad(longitude)
-  marker.position.x = radius * Math.sin(lat) * Math.sin(lon)
-  marker.position.y = radius * Math.cos(lat)
+  const lat = THREE.MathUtils.degToRad(latitude)
+  const lon = THREE.MathUtils.degToRad(longitude)
+  marker.position.x = radius * Math.cos(lat) * Math.sin(lon)
+  marker.position.y = radius * Math.sin(lat)
   marker.position.z = radius * Math.cos(lat) * Math.cos(lon)
 }
 
-const group = new THREE.Group()
-group.add(sphere)
-group.add(atmosphere)
-group.add(satelliteMarker)
-scene.add(group)
-
+scene.add(sphere)
+scene.add(atmosphere)
+scene.add(satelliteMarker)
 
 const starGeometry = new THREE.BufferGeometry()
 const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
@@ -99,42 +106,15 @@ starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVerti
 const stars = new THREE.Points(starGeometry, starMaterial)
 scene.add(stars)
 
-
-const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false}
-
 camera.position.z = 15
 function animate() {
   requestAnimationFrame(animate)
+  controls.update()
   renderer.render(scene, camera)
   if(!mouse.isDragging) {
-    group.rotation.y += 0.0005
   }
 }
 animate()
-
-addEventListener('mousedown', (event) => {
-  if(event.button === 0) {
-    mouse.isDragging = true
-    mouse.previousX = event.clientX
-    mouse.previousY = event.clientY
-  }
-})
-
-addEventListener('mouseup', (event) => {
-  if(event.button === 0) {
-    mouse.isDragging = false
-  }
-})
-
-addEventListener('mousemove', (event) => {
-  if(!mouse.isDragging) return
-  const deltaX = event.clientX - mouse.previousX
-  const deltaY = event.clientY - mouse.previousY
-  group.rotation.y += deltaX * 0.005
-  group.rotation.x += deltaY * 0.005
-  mouse.previousX = event.clientX
-  mouse.previousY = event.clientY
-})
 
 async function loadSatelliteData() {
   try {
@@ -163,7 +143,7 @@ async function loadSatelliteData() {
       const longitude = satellite.degreesLong(positionGd.longitude)
       const altitude = positionGd.height
       updateSatellitePosition(satelliteMarker, latitude, longitude, altitude)
-
+      console.log('Marker position:', satelliteMarker.position.x, satelliteMarker.position.y, satelliteMarker.z)
       console.log('ISS position:')
       console.log('Latitude:', latitude)
       console.log('Longitude:', longitude)
