@@ -5,8 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { OrbitControls } from 'three/examples/jsm/Addons.js'
-
+import { isTypedArray } from 'three/src/utils.js'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -18,15 +17,6 @@ const orbitTraceLoadingScreen = document.getElementById('orbitTraceLoadingScreen
 const loadingProgress = document.getElementById('loadingProgress')
 const loadingPercent = document.getElementById('loadingPercent')
 const textureLoader = new THREE.TextureLoader()
-
-const controls = new OrbitControls(camera, renderer.domElement)
-controls.enableDamping = true
-controls.dampingFactor = 0.09
-controls.minDistance = 7
-controls.maxDistance = 32
-controls.target.set(0, 0, 0)
-camera.position.set(0, 0, 15)
-controls.update()
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -86,11 +76,46 @@ function updateSatellitePosition(marker, latitude, longitude, altitude) {
   marker.position.x = radius * Math.cos(lat) * Math.sin(lon)
   marker.position.y = radius * Math.sin(lat)
   marker.position.z = radius * Math.cos(lat) * Math.cos(lon)
+
+  console.log("Satellite position: ", marker.position.x, marker.position.y, marker.postion.z)
 }
 
-scene.add(sphere)
-scene.add(atmosphere)
-scene.add(satelliteMarker)
+const earthGroup = new THREE.Group()
+earthGroup.add(sphere)
+earthGroup.add(atmosphere)
+earthGroup.add(satelliteMarker)
+scene.add(earthGroup)
+
+const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false}
+const globeRotation ={x: 0, y: 0}
+
+addEventListener('mousedown', (event) => {
+  if(event.button !== 0) return
+  mouse.isDragging = true
+  mouse.previousX = event.clientX
+  mouse.previousY = event.clientY
+})
+
+addEventListener('mouseup', (event) => {
+  if(event.button !== 0) return
+  mouse.isDragging = false
+})
+
+addEventListener('mousemove', (event) => {
+  if(!mouse.isDragging) return
+  const deltaX = event.clientX - mouse.previousX
+  const deltaY = event.clientY - mouse.previousY
+  globeRotation.y += deltaX * 0.005
+  globeRotation.x += deltaY * 0.005
+  const maxTilt = Math.PI / 2 - 0.1
+  globeRotation.x = Math.max(-maxTilt, Math.min(maxTilt, globeRotation.x))
+  earthGroup.rotation.x = globeRotation.x
+  earthGroup.rotation.y = globeRotation.y
+  mouse.previousX = event.clientX
+  mouse.previousY = event.clientY
+})
+
+
 
 const starGeometry = new THREE.BufferGeometry()
 const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
@@ -109,10 +134,7 @@ scene.add(stars)
 camera.position.z = 15
 function animate() {
   requestAnimationFrame(animate)
-  controls.update()
   renderer.render(scene, camera)
-  if(!mouse.isDragging) {
-  }
 }
 animate()
 
@@ -143,7 +165,7 @@ async function loadSatelliteData() {
       const longitude = satellite.degreesLong(positionGd.longitude)
       const altitude = positionGd.height
       updateSatellitePosition(satelliteMarker, latitude, longitude, altitude)
-      console.log('Marker position:', satelliteMarker.position.x, satelliteMarker.position.y, satelliteMarker.z)
+      console.log('Marker position:', satelliteMarker.position.x, satelliteMarker.position.y, satelliteMarker.position.z)
       console.log('ISS position:')
       console.log('Latitude:', latitude)
       console.log('Longitude:', longitude)
