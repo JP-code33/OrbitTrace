@@ -5,6 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
+import { add } from 'three/tsl'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -69,7 +70,7 @@ const atmosphere = new THREE.Mesh(
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
-const satelliteGeometry = new THREE.SphereGeometry(0.05, 8, 8)
+const satelliteGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarkers = []
 
@@ -217,7 +218,10 @@ addEventListener('mousemove', (event) => {
   mouse.previousY = event.clientY
 })
 
-
+addEventListener('wheel', (event) => {
+  camera.position.z += event.deltaY * 0.01
+  camera.position.z = Math.max(6, Math.min(30, camera.position.z))
+})
 
 const starGeometry = new THREE.BufferGeometry()
 const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
