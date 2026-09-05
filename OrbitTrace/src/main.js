@@ -5,7 +5,6 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { isTypedArray } from 'three/src/utils.js'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -64,7 +63,7 @@ atmosphere.scale.set(1.1, 1.1, 1.1)
 
 
 const satelliteGeometry = new THREE.SphereGeometry(0.09, 8, 8)
-const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00, depthTest: false})
+const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
@@ -77,7 +76,7 @@ function updateSatellitePosition(marker, latitude, longitude, altitude) {
   marker.position.y = radius * Math.sin(lat)
   marker.position.z = radius * Math.cos(lat) * Math.cos(lon)
 
-  console.log("Satellite position: ", marker.position.x, marker.position.y, marker.postion.z)
+  console.log("Satellite position: ", marker.position.x, marker.position.y, marker.position.z)
 }
 
 const earthGroup = new THREE.Group()
@@ -176,3 +175,7 @@ async function loadSatelliteData() {
 }
 
 loadSatelliteData()
+
+setInterval(() => {
+  loadSatelliteData
+}, 5000)
