@@ -69,7 +69,7 @@ const atmosphere = new THREE.Mesh(
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
-const satelliteGeometry = new THREE.SphereGeometry(0.15, 8, 8)
+const satelliteGeometry = new THREE.SphereGeometry(0.05, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarkers = []
 
@@ -105,10 +105,41 @@ async function createSatellites() {
   satellites.forEach((satelliteData) => {
     const marker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
     marker.userData = satelliteData
-    updateSatellitePosition(marker, satelliteData.latitude, satelliteData.longitude, satelliteData.altitude)
+    if(satelliteData.line1 && satelliteData.line2) {
+      const satrec = satellite.twoline2satrec(satelliteData.line1, satelliteData.line2)
+      console.log("TLE:", satelliteData.line1, satelliteData.line2)
+      console.log("Satrec:", satrec)
+      console.log("Satrec error:", satrec.error)
+      marker.userData.satrec = satrec
+    }
+
+    if(satelliteData.latitude !== undefined) {
+      updateSatellitePosition(marker, satelliteData.latitude, satelliteData.longitude, satelliteData.altitude)
+    }
     satelliteMarkers.push(marker)
     earthGroup.add(marker)
+    if(marker.userData.satrec) {
+      updateRealSatellitePosition(marker)
+    }
   })
+}
+
+function updateRealSatellitePosition(marker) {
+  const satrec = marker.userData.satrec
+  if(!satrec) return
+  const now = new Date()
+  const positionAndVelocity = satellite.propagate(satrec, now)
+  console.log("Position and Velocity:", positionAndVelocity)
+  if(!positionAndVelocity.position) return
+  const gmst = satellite.gstime(now)
+  const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
+  const latitude = satellite.degreesLat(positionGd.latitude)
+  const longitude = satellite.degreesLong(positionGd.longitude)
+  const altitude = positionGd.height
+  marker.userData.latitude = latitude
+  marker.userData.longitude = longitude
+  marker.userData.altitude = altitude
+  updateSatellitePosition(marker, latitude, longitude, altitude)
 }
 
 
@@ -205,6 +236,11 @@ scene.add(stars)
 function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
+  satelliteMarkers.forEach((marker) => {
+    if(marker.userData.satrec) {
+      updateRealSatellitePosition(marker)
+    }
+  })
 }
 animate()
 
