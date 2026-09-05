@@ -5,8 +5,6 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { AnalyticLightNode } from 'three/webgpu'
-import { ScreenNode } from 'three/webgpu'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -75,33 +73,6 @@ const satelliteGeometry = new THREE.SphereGeometry(0.15, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarkers = []
 
-
-//This are sample satellites for developing purposes because my API just blocks me off for a long time if requested a lot of requestes.
-
-const testSatellites = [
-  {
-    name: 'ISS',
-    noradId: 25544, 
-    latitude: 40, 
-    longitude: 30,
-    altitude: 420
-  },
-  {
-    name: 'TestSatellite2',
-    noradId: 12345,
-    latitude: -20,
-    longitude: 100, 
-    altitude: 800
-  },
-  {
-    name: 'TestSatellite3',
-    noradId: 67891,
-    latitude: 60,
-    longitude: -80,
-    altitude: 1200
-  },
-]
-
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
   const altitudeScale = 5 / 6371
@@ -119,14 +90,27 @@ const earthGroup = new THREE.Group()
 earthGroup.add(sphere)
 earthGroup.add(atmosphere)
 scene.add(earthGroup)
+createSatellites()
 
-testSatellites.forEach((satelliteData) => {
-  const marker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
-  marker.userData = satelliteData
-  updateSatellitePosition(marker, satelliteData.latitude, satelliteData.longitude, satelliteData.altitude)
-  satelliteMarkers.push(marker)
-  earthGroup.add(marker)
-})
+async function loadSatelliteData() {
+  const response = await fetch('/data/satellites.json')
+  if(!response.ok) {
+    throw new Error('Failed to load satellite data')
+  }
+  return await response.json()
+}
+
+async function createSatellites() {
+  const satellites = await loadSatelliteData()
+  satellites.forEach((satelliteData) => {
+    const marker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
+    marker.userData = satelliteData
+    updateSatellitePosition(marker, satelliteData.latitude, satelliteData.longitude, satelliteData.altitude)
+    satelliteMarkers.push(marker)
+    earthGroup.add(marker)
+  })
+}
+
 
 earthGroup.updateMatrixWorld(true)
 camera.updateMatrixWorld(true)

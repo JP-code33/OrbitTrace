@@ -1,0 +1,23 @@
+[
+  {
+    "name": "ISS",
+    "noradId": 25544, 
+    "latitude": 40, 
+    "longitude": 30,
+    "altitude": 420
+  },
+  {
+    "name": "TestSatellite2",
+    "noradId": 12345,
+    "latitude": -20,
+    "longitude": 100, 
+    "altitude": 800
+  },
+  {
+    "name": "TestSatellite3",
+    "noradId": 67891,
+    "latitude": 60,
+    "longitude": -80,
+    "altitude": 1200
+  }
+]
