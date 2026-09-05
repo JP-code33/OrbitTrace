@@ -58,13 +58,13 @@ html, body {
 #satelliteInfoPanel {
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     width: 340px;
     height: 100vh;
     background: rgba(10, 10, 10, 0.95);
     border-left: 1px solid #333;
     z-index: 500;
-    transform: translateX(100%);
+    transform: translateX(-100%);
     transition: transform 0.35s ease;
     color: white;
     font-family: Arial, sans-serif;
