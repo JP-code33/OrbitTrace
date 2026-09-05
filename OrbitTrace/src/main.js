@@ -6,9 +6,11 @@ import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
 import { AnalyticLightNode } from 'three/webgpu'
+import { ScreenNode } from 'three/webgpu'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
+camera.position.z = 15
 const renderer = new THREE.WebGLRenderer({antialias: true})
 renderer.setSize(innerWidth, innerHeight)
 renderer.setPixelRatio(window.devicePixelRatio)
@@ -17,6 +19,13 @@ const orbitTraceLoadingScreen = document.getElementById('orbitTraceLoadingScreen
 const loadingProgress = document.getElementById('loadingProgress')
 const loadingPercent = document.getElementById('loadingPercent')
 const textureLoader = new THREE.TextureLoader()
+
+const satelliteInfoPanel = document.getElementById('satelliteInfoPanel')
+const satelliteName = document.getElementById('satelliteName')
+const satelliteNoradId = document.getElementById('satelliteNoradId')
+const satelliteLatitude = document.getElementById('satelliteLatitude')
+const satelliteLongitude = document.getElementById('satelliteLongitude')
+const satelliteAltitude = document.getElementById('satelliteAltitude')
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -62,11 +71,10 @@ const atmosphere = new THREE.Mesh(
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
-
-const satelliteGeometry = new THREE.SphereGeometry(0.09, 8, 8)
+const satelliteGeometry = new THREE.SphereGeometry(0.15, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
-const satelliteMarker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
 const satelliteMarkers = []
+
 
 //This are sample satellites for developing purposes because my API just blocks me off for a long time if requested a lot of requestes.
 
@@ -110,7 +118,6 @@ function updateSatellitePosition(marker, latitude, longitude, altitude) {
 const earthGroup = new THREE.Group()
 earthGroup.add(sphere)
 earthGroup.add(atmosphere)
-earthGroup.add(satelliteMarker)
 scene.add(earthGroup)
 
 testSatellites.forEach((satelliteData) => {
@@ -121,12 +128,57 @@ testSatellites.forEach((satelliteData) => {
   earthGroup.add(marker)
 })
 
-const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false}
+earthGroup.updateMatrixWorld(true)
+camera.updateMatrixWorld(true)
+
+renderer.domElement.addEventListener('click', (event) => {
+  const rect = renderer.domElement.getBoundingClientRect()
+  
+  const clickX = event.clientX - rect.left
+  const clickY = event.clientY - rect.top
+  let closestSatellite = null
+  let closestDistance = Infinity
+
+  satelliteMarkers.forEach((marker) => {
+    const screenPosition = new THREE.Vector3()
+    marker.getWorldPosition(screenPosition)
+    screenPosition.project(camera)
+    if(screenPosition.z < -1 || screenPosition.z > 1) {
+      return
+    }
+    const satelliteX = (screenPosition.x + 1) / 2 * rect.width
+    const satelliteY = (-screenPosition.y + 1) / 2 * rect.height
+    const distance = Math.sqrt((clickX - satelliteX) ** 2 + (clickY - satelliteY) ** 2)
+
+    if(distance < closestDistance) {
+      closestDistance = distance
+      closestSatellite = marker
+    }
+  })
+
+  console.log('clicked')
+  console.log('Closest distance:', closestDistance)
+
+  if(closestSatellite && closestDistance < 25) {
+    const selectedSatellite = closestSatellite.userData
+    satelliteName.textContent = selectedSatellite.name
+    satelliteNoradId.textContent = selectedSatellite.noradId
+    satelliteLatitude.textContent = `${selectedSatellite.latitude}°`
+    satelliteLongitude.textContent = `${selectedSatellite.longitude}°`
+    satelliteAltitude.textContent = `${selectedSatellite.altitude}km`
+    satelliteInfoPanel.classList.add('open')
+    return
+  }
+  satelliteInfoPanel.classList.remove('open')
+})
+
+const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}
 
 addEventListener('mousedown', (event) => {
   if(event.button !== 0) return
   mouse.isDragging = true
+  mouse.didMove = false
   mouse.previousX = event.clientX
   mouse.previousY = event.clientY
 })
@@ -166,7 +218,6 @@ starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVerti
 const stars = new THREE.Points(starGeometry, starMaterial)
 scene.add(stars)
 
-camera.position.z = 15
 function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)

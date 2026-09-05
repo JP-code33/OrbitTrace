@@ -54,3 +54,66 @@ html, body {
     color: #777;
     letter-spacing: 2px;
 }
+
+#satelliteInfoPanel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 340px;
+    height: 100vh;
+    background: rgba(10, 10, 10, 0.95);
+    border-left: 1px solid #333;
+    z-index: 500;
+    transform: translateX(100%);
+    transition: transform 0.35s ease;
+    color: white;
+    font-family: Arial, sans-serif;
+    box-sizing: border-box;
+}
+
+#satelliteInfoPanel.open {
+    transform: translateX(0);
+}
+
+.satelliteInfoHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 21px;
+    border-bottom: 1px solid #333;
+}
+
+.satelliteInfoHeader h2 {
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: 2px;
+}
+
+.satelliteInfoContent {
+    padding: 24px;
+}
+
+.satelliteInfoContent h3 {
+    margin: 0 0 28px;
+    font-size: 22px;
+    color: #9cff00;
+}
+
+.satelliteInfoRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid #222;
+}
+
+.satelliteInfoRow span {
+    color: #777;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.satelliteInfoRow strong {
+    color: white;
+    font-size: 13px;
+    font-weight: normal;
+}
