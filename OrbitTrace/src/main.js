@@ -5,7 +5,6 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { add } from 'three/tsl'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -70,7 +69,7 @@ const atmosphere = new THREE.Mesh(
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
-const satelliteGeometry = new THREE.BoxGeometry(0.05, 0.05, 0.05)
+const satelliteGeometry = new THREE.BoxGeometry(0.03, 0.03, 0.03)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarkers = []
 
@@ -106,22 +105,16 @@ async function createSatellites() {
   satellites.forEach((satelliteData) => {
     const marker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
     marker.userData = satelliteData
-    if(satelliteData.line1 && satelliteData.line2) {
-      const satrec = satellite.twoline2satrec(satelliteData.line1, satelliteData.line2)
-      console.log("TLE:", satelliteData.line1, satelliteData.line2)
-      console.log("Satrec:", satrec)
-      console.log("Satrec error:", satrec.error)
-      marker.userData.satrec = satrec
-    }
-
-    if(satelliteData.latitude !== undefined) {
-      updateSatellitePosition(marker, satelliteData.latitude, satelliteData.longitude, satelliteData.altitude)
-    }
+  
+    const satrec = satellite.json2satrec(satelliteData)
+    console.log("Satellite:", satelliteData.OBJECT_NAME)
+    console.log("Satrec:", satrec)
+    console.log("Satrec error:", satrec.error)
+    marker.userData.satrec = satrec
+    
     satelliteMarkers.push(marker)
     earthGroup.add(marker)
-    if(marker.userData.satrec) {
-      updateRealSatellitePosition(marker)
-    }
+    updateRealSatellitePosition(marker)
   })
 }
 
