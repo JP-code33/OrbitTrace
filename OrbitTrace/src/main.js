@@ -5,6 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
+import { AnalyticLightNode } from 'three/webgpu'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -65,6 +66,33 @@ atmosphere.scale.set(1.1, 1.1, 1.1)
 const satelliteGeometry = new THREE.SphereGeometry(0.09, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
 const satelliteMarker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
+const satelliteMarkers = []
+
+//This are sample satellites for developing purposes because my API just blocks me off for a long time if requested a lot of requestes.
+
+const testSatellites = [
+  {
+    name: 'ISS',
+    noradId: 25544, 
+    latitude: 40, 
+    longitude: 30,
+    altitude: 420
+  },
+  {
+    name: 'TestSatellite2',
+    noradId: 12345,
+    latitude: -20,
+    longitude: 100, 
+    altitude: 800
+  },
+  {
+    name: 'TestSatellite3',
+    noradId: 67891,
+    latitude: 60,
+    longitude: -80,
+    altitude: 1200
+  },
+]
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -84,6 +112,14 @@ earthGroup.add(sphere)
 earthGroup.add(atmosphere)
 earthGroup.add(satelliteMarker)
 scene.add(earthGroup)
+
+testSatellites.forEach((satelliteData) => {
+  const marker = new THREE.Mesh(satelliteGeometry, satelliteMaterial)
+  marker.userData = satelliteData
+  updateSatellitePosition(marker, satelliteData.latitude, satelliteData.longitude, satelliteData.altitude)
+  satelliteMarkers.push(marker)
+  earthGroup.add(marker)
+})
 
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false}
 const globeRotation ={x: 0, y: 0}
@@ -137,7 +173,7 @@ function animate() {
 }
 animate()
 
-async function loadSatelliteData() {
+/*async function loadSatelliteData() {
   try {
     const response = await fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE`)
     if(!response.ok) {
@@ -178,4 +214,4 @@ loadSatelliteData()
 
 setInterval(() => {
   loadSatelliteData
-}, 5000)
+}, 5000)*/
