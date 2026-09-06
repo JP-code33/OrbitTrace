@@ -174,12 +174,14 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
   satelliteInfoPanel.classList.add('open')
 })
 
+let cameraZoomDirection = new THREE.Vector3(0, 0, 1)
+
 function moveCameraToSatellite(marker) {
   const satellitePosition = new THREE.Vector3()
   marker.getWorldPosition(satellitePosition)
-  const direction = satellitePosition.clone().normalize()
+  cameraZoomDirection.copy(satellitePosition).normalize()
   cameraFocusStart.copy(camera.position)
-  cameraFocusEnd.copy(direction.multiplyScalar(8))
+  cameraFocusEnd.copy(cameraZoomDirection).multiplyScalar(9)
   cameraFocusProgress = 0
   cameraFocusActive = true
 }
@@ -260,8 +262,10 @@ addEventListener('mousemove', (event) => {
 
 addEventListener('wheel', (event) => {
   const zoomAmount = event.deltaY * 0.01
-  camera.position.z += zoomAmount
-  camera.position.z = Math.max(6, Math.min(30, camera.position.z))
+  const currentDistance = camera.position.length()
+  const newDistance = THREE.MathUtils.clamp(currentDistance + zoomAmount, 6, 30)
+  camera.position.copy(cameraZoomDirection).multiplyScalar(newDistance)
+  camera.lookAt(0, 0, 0)
 })
 
 const starGeometry = new THREE.BufferGeometry()
@@ -287,9 +291,11 @@ function animate() {
     const progress = Math.min(cameraFocusProgress, 1)
     const smoothProgress = progress * progress * (3 - 2 * progress)
     camera.position.lerpVectors(cameraFocusStart, cameraFocusEnd, smoothProgress)
-    camera.lookAt(cameraTarget)
+    camera.lookAt(0, 0, 0)
+    
     if(progress >= 1) {
       cameraFocusActive = false
+      cameraZoomDirection.copy(camera.position).normalize()
     }
   }
 }
