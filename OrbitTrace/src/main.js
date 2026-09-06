@@ -118,6 +118,12 @@ async function createSatellites() {
     earthGroup.add(marker)
     updateRealSatellitePosition(marker)
   })
+
+  setInterval(() => {
+  satelliteMarkers.forEach((marker) => {
+    updateRealSatellitePosition(marker)
+  })
+  }, 1000)
 }
 
 function updateRealSatellitePosition(marker) {
@@ -130,7 +136,6 @@ function updateRealSatellitePosition(marker) {
   const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
   const latitude = satellite.degreesLat(positionGd.latitude)
   const longitude = satellite.degreesLong(positionGd.longitude)
-  console.log('ISS Calculated location:', latitude, longitude)
   const altitude = positionGd.height
   marker.userData.latitude = latitude
   marker.userData.longitude = longitude
@@ -174,7 +179,7 @@ function moveCameraToSatellite(marker) {
   marker.getWorldPosition(satellitePosition)
   const direction = satellitePosition.clone().normalize()
   cameraFocusStart.copy(camera.position)
-  cameraFocusEnd.copy(direction.multiplyScalar(8))
+  cameraFocusEnd.copy(direction.multiplyScalar(6))
   cameraFocusProgress = 0
   cameraFocusActive = true
 }
@@ -288,46 +293,3 @@ function animate() {
   }
 }
 animate()
-
-/*async function loadSatelliteData() {
-  try {
-    const response = await fetch(`https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=TLE`)
-    if(!response.ok) {
-      throw new Error(`Satellite data request failed: ${response.status}`)
-      }
-      const tleText = await response.text()
-      
-      console.log('ISS TLE: ')
-      console.log(tleText)
-      const lines = tleText.trim().split('\n')
-      const name = lines[0].trim()
-      const line1 = lines[1].trim()
-      const line2 = lines[2].trim()
-      console.log('Name:', name)
-      console.log('Line 1:', line1)
-      console.log('Line 2:', line2)
-
-      const satrec = satellite.twoline2satrec(line1, line2)
-      const now = new Date()
-      const gmst = satellite.gstime(now)
-      const positionAndVelocity = satellite.propagate(satrec, now)
-      const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
-      const latitude = satellite.degreesLat(positionGd.latitude)
-      const longitude = satellite.degreesLong(positionGd.longitude)
-      const altitude = positionGd.height
-      updateSatellitePosition(satelliteMarker, latitude, longitude, altitude)
-      console.log('Marker position:', satelliteMarker.position.x, satelliteMarker.position.y, satelliteMarker.position.z)
-      console.log('ISS position:')
-      console.log('Latitude:', latitude)
-      console.log('Longitude:', longitude)
-      console.log('Altitude:', altitude)
-  } catch (error) {
-    console.log('Failed to load satellite data:', error)
-  }
-}
-
-loadSatelliteData()
-
-setInterval(() => {
-  loadSatelliteData
-}, 5000)*/
