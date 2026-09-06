@@ -75,8 +75,10 @@ const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00})
 const selectedSatelliteMaterial = new THREE.MeshBasicMaterial({color: 0xEE4B2B})
 const satelliteMarkers = []
 let selectedSatelliteMarker = null
-let cameraTarget = new THREE.Vector3()
-let cameraTargetDistance = 15
+let cameraFocusActive = false
+let cameraFocusStart = new THREE.Vector3()
+let cameraFocusEnd = new THREE.Vector3()
+let cameraFocusProgress = 0
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -170,9 +172,11 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
 function moveCameraToSatellite(marker) {
   const satellitePosition = new THREE.Vector3()
   marker.getWorldPosition(satellitePosition)
-  cameraTarget.copy(satellitePosition)
-  cameraTargetDistance = 8
-  console.log('selected satellite world position:', satellitePosition.x, satellitePosition.y, satellitePosition.z)
+  const direction = satellitePosition.clone().normalize()
+  cameraFocusStart.copy(camera.position)
+  cameraFocusEnd.copy(direction.multiplyScalar(8))
+  cameraFocusProgress = 0
+  cameraFocusActive = true
 }
 
 earthGroup.updateMatrixWorld(true)
@@ -271,6 +275,17 @@ scene.add(stars)
 function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
+
+  if(cameraFocusActive) {
+    cameraFocusProgress += 0.04
+    const progress = Math.min(cameraFocusProgress, 1)
+    const smoothProgress = progress * progress * (3 - 2 * progress)
+    camera.position.lerpVectors(cameraFocusStart, cameraFocusEnd, smoothProgress)
+    camera.lookAt(0, 0, 0)
+    if(progress >= 1) {
+      cameraFocusActive = false
+    }
+  }
 }
 animate()
 
