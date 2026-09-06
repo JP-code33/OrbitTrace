@@ -70,21 +70,23 @@ const atmosphere = new THREE.Mesh(
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
-const satelliteGeometry = new THREE.BoxGeometry(0.03, 0.03, 0.03)
+const satelliteGeometry = new THREE.SphereGeometry(0.015, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00})
+const selectedSatelliteMaterial = new THREE.MeshBasicMaterial({color: 0xEE4B2B})
 const satelliteMarkers = []
+let selectedSatelliteMarker = null
+let cameraTarget = new THREE.Vector3()
+let cameraTargetDistance = 15
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
   const altitudeScale = 5 / 6371
   const radius = earthRadius + altitude * altitudeScale
   const lat = THREE.MathUtils.degToRad(latitude)
-  const lon = THREE.MathUtils.degToRad(longitude)
+  const lon = THREE.MathUtils.degToRad(longitude + 90)
   marker.position.x = radius * Math.cos(lat) * Math.sin(lon)
   marker.position.y = radius * Math.sin(lat)
   marker.position.z = radius * Math.cos(lat) * Math.cos(lon)
-
-  console.log("Satellite position: ", marker.position.x, marker.position.y, marker.position.z)
 }
 
 const earthGroup = new THREE.Group()
@@ -108,9 +110,6 @@ async function createSatellites() {
     marker.userData = satelliteData
   
     const satrec = satellite.json2satrec(satelliteData)
-    console.log("Satellite:", satelliteData.OBJECT_NAME)
-    console.log("Satrec:", satrec)
-    console.log("Satrec error:", satrec.error)
     marker.userData.satrec = satrec
     
     satelliteMarkers.push(marker)
@@ -124,12 +123,12 @@ function updateRealSatellitePosition(marker) {
   if(!satrec) return
   const now = new Date()
   const positionAndVelocity = satellite.propagate(satrec, now)
-  console.log("Position and Velocity:", positionAndVelocity)
-  if(!positionAndVelocity.position || !positionAndVelocity) return
+  if(!positionAndVelocity || !positionAndVelocity.position) return
   const gmst = satellite.gstime(now)
   const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
   const latitude = satellite.degreesLat(positionGd.latitude)
   const longitude = satellite.degreesLong(positionGd.longitude)
+  console.log('ISS Calculated location:', latitude, longitude)
   const altitude = positionGd.height
   marker.userData.latitude = latitude
   marker.userData.longitude = longitude
@@ -151,6 +150,13 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
     return
   }
 
+  if(selectedSatelliteMarker) {
+    selectedSatelliteMarker.material = satelliteMaterial
+  }
+  foundSatellite.material = selectedSatelliteMaterial
+  selectedSatelliteMarker = foundSatellite
+  moveCameraToSatellite(foundSatellite)
+
   const selectedSatellite = foundSatellite.userData
   satelliteName.textContent = selectedSatellite.OBJECT_NAME
   satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
@@ -159,9 +165,15 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
   satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)}km`
 
   satelliteInfoPanel.classList.add('open')
-  console.log('Found satellite:', selectedSatellite.OBJECT_NAME)
 })
 
+function moveCameraToSatellite(marker) {
+  const satellitePosition = new THREE.Vector3()
+  marker.getWorldPosition(satellitePosition)
+  cameraTarget.copy(satellitePosition)
+  cameraTargetDistance = 8
+  console.log('selected satellite world position:', satellitePosition.x, satellitePosition.y, satellitePosition.z)
+}
 
 earthGroup.updateMatrixWorld(true)
 camera.updateMatrixWorld(true)
@@ -192,9 +204,6 @@ renderer.domElement.addEventListener('click', (event) => {
     }
   })
 
-  console.log('clicked')
-  console.log('Closest distance:', closestDistance)
-
   if(closestSatellite && closestDistance < 25) {
     const selectedSatellite = closestSatellite.userData
     satelliteName.textContent = selectedSatellite.OBJECT_NAME
@@ -210,6 +219,7 @@ renderer.domElement.addEventListener('click', (event) => {
 
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}
+earthGroup.rotation.set(0, 0, 0)
 
 addEventListener('mousedown', (event) => {
   if(event.button !== 0) return
