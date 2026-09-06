@@ -70,7 +70,7 @@ const atmosphere = new THREE.Mesh(
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
 const satelliteGeometry = new THREE.BoxGeometry(0.03, 0.03, 0.03)
-const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x9cff00})
+const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00})
 const satelliteMarkers = []
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
@@ -141,6 +141,7 @@ earthGroup.updateMatrixWorld(true)
 camera.updateMatrixWorld(true)
 
 renderer.domElement.addEventListener('click', (event) => {
+  if(mouse.didMove) return
   const rect = renderer.domElement.getBoundingClientRect()
   
   const clickX = event.clientX - rect.left
@@ -170,8 +171,8 @@ renderer.domElement.addEventListener('click', (event) => {
 
   if(closestSatellite && closestDistance < 25) {
     const selectedSatellite = closestSatellite.userData
-    satelliteName.textContent = selectedSatellite.name
-    satelliteNoradId.textContent = selectedSatellite.noradId
+    satelliteName.textContent = selectedSatellite.OBJECT_NAME
+    satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
     satelliteLatitude.textContent = `${selectedSatellite.latitude}°`
     satelliteLongitude.textContent = `${selectedSatellite.longitude}°`
     satelliteAltitude.textContent = `${selectedSatellite.altitude}km`
@@ -201,6 +202,7 @@ addEventListener('mousemove', (event) => {
   if(!mouse.isDragging) return
   const deltaX = event.clientX - mouse.previousX
   const deltaY = event.clientY - mouse.previousY
+  mouse.didMove = true
   globeRotation.y += deltaX * 0.005
   globeRotation.x += deltaY * 0.005
   const maxTilt = Math.PI / 2 - 0.1
@@ -233,11 +235,6 @@ scene.add(stars)
 function animate() {
   requestAnimationFrame(animate)
   renderer.render(scene, camera)
-  satelliteMarkers.forEach((marker) => {
-    if(marker.userData.satrec) {
-      updateRealSatellitePosition(marker)
-    }
-  })
 }
 animate()
 
