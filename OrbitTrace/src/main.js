@@ -5,6 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
+import { min } from 'three/tsl'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -79,6 +80,7 @@ let cameraFocusActive = false
 let cameraFocusStart = new THREE.Vector3()
 let cameraFocusEnd = new THREE.Vector3()
 let cameraFocusProgress = 0
+let cameraTarget = new THREE.Vector3()
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -179,7 +181,8 @@ function moveCameraToSatellite(marker) {
   marker.getWorldPosition(satellitePosition)
   const direction = satellitePosition.clone().normalize()
   cameraFocusStart.copy(camera.position)
-  cameraFocusEnd.copy(direction.multiplyScalar(6))
+  cameraFocusEnd.copy(direction.multiplyScalar(8))
+  cameraTarget.copy(satellitePosition)
   cameraFocusProgress = 0
   cameraFocusActive = true
 }
@@ -259,8 +262,29 @@ addEventListener('mousemove', (event) => {
 })
 
 addEventListener('wheel', (event) => {
-  camera.position.z += event.deltaY * 0.01
-  camera.position.z = Math.max(6, Math.min(30, camera.position.z))
+  const zoomAmount = event.deltaY * 0.01
+
+  if(selectedSatelliteMarker) {
+    const target = new THREE.Vector3()
+    selectedSatelliteMarker.getWorldPosition(target)
+    const direction = camera.position.clone().sub(target).normalize()
+    camera.position.addScaledVector(direction, zoomAmount)
+  } else {
+    camera.position.z += zoomAmount
+  }
+  const minDistance = 6
+  const maxDistance = 30
+
+  const currentDistance = camera.position.distanceTo(cameraTarget)
+  if(currentDistance < minDistance) {
+    const direction = camera.position.clone.sub(cameraTarget).normalize()
+    camera.position.copy(cameraTarget).addScaledVector(direction, minDistance)
+  }
+
+  if(currentDistance > maxDistance) {
+    const direction = camera.position.clone().sub(cameraTarget).normalize()
+    camera.position.copy(cameraTarget).addScaledVector(direction, maxDistance)
+  }
 })
 
 const starGeometry = new THREE.BufferGeometry()
@@ -286,7 +310,7 @@ function animate() {
     const progress = Math.min(cameraFocusProgress, 1)
     const smoothProgress = progress * progress * (3 - 2 * progress)
     camera.position.lerpVectors(cameraFocusStart, cameraFocusEnd, smoothProgress)
-    camera.lookAt(0, 0, 0)
+    camera.lookAt(cameraTarget)
     if(progress >= 1) {
       cameraFocusActive = false
     }
