@@ -24,6 +24,7 @@ const satelliteNoradId = document.getElementById('satelliteNoradId')
 const satelliteLatitude = document.getElementById('satelliteLatitude')
 const satelliteLongitude = document.getElementById('satelliteLongitude')
 const satelliteAltitude = document.getElementById('satelliteAltitude')
+const orbitTraceSatelliteSearchInput = document.getElementById('orbitTraceSatelliteSearchInput')
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -124,7 +125,7 @@ function updateRealSatellitePosition(marker) {
   const now = new Date()
   const positionAndVelocity = satellite.propagate(satrec, now)
   console.log("Position and Velocity:", positionAndVelocity)
-  if(!positionAndVelocity.position) return
+  if(!positionAndVelocity.position || !positionAndVelocity) return
   const gmst = satellite.gstime(now)
   const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
   const latitude = satellite.degreesLat(positionGd.latitude)
@@ -135,6 +136,31 @@ function updateRealSatellitePosition(marker) {
   marker.userData.altitude = altitude
   updateSatellitePosition(marker, latitude, longitude, altitude)
 }
+
+orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
+  if(event.key !== 'Enter') return
+  const searchQuery = orbitTraceSatelliteSearchInput.value.trim().toLowerCase()
+  if(!searchQuery) return
+
+  const foundSatellite = satelliteMarkers.find((marker) => {
+    const satelliteData = marker.userData
+    return satelliteData.OBJECT_NAME?.toLowerCase().includes(searchQuery) || satelliteData.NORAD_CAT_ID?.toString() === searchQuery
+  })
+
+  if(!foundSatellite) {
+    return
+  }
+
+  const selectedSatellite = foundSatellite.userData
+  satelliteName.textContent = selectedSatellite.OBJECT_NAME
+  satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
+  satelliteLatitude.textContent = `${selectedSatellite.latitude.toFixed(2)}°`
+  satelliteLongitude.textContent = `${selectedSatellite.longitude.toFixed(2)}°`
+  satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)}km`
+
+  satelliteInfoPanel.classList.add('open')
+  console.log('Found satellite:', selectedSatellite.OBJECT_NAME)
+})
 
 
 earthGroup.updateMatrixWorld(true)
