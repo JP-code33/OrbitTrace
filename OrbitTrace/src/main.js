@@ -27,6 +27,7 @@ const satelliteAltitude = document.getElementById('satelliteAltitude')
 const orbitTraceSatelliteSearchInput = document.getElementById('orbitTraceSatelliteSearchInput')
 const satelliteVelocity = document.getElementById('satelliteVelocity')
 const satelliteOrbitalPeriod = document.getElementById('satelliteOrbitalPeriod')
+const satelliteNearestCity = document.getElementById('satelliteNearestCity')
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -200,6 +201,7 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
   moveCameraToSatellite(foundSatellite)
   createOrbitPath(foundSatellite)
   createCompletedOrbitPath(foundSatellite)
+  updateNearestCity()
 
   const selectedSatellite = foundSatellite.userData
   satelliteName.textContent = selectedSatellite.OBJECT_NAME
@@ -336,6 +338,7 @@ renderer.domElement.addEventListener('click', (event) => {
     moveCameraToSatellite(closestSatellite)
     createCompletedOrbitPath(closestSatellite)
     createOrbitPath(closestSatellite)
+    updateNearestCity()
  
     const selectedSatellite = closestSatellite.userData
     satelliteName.textContent = selectedSatellite.OBJECT_NAME
@@ -350,6 +353,23 @@ renderer.domElement.addEventListener('click', (event) => {
   }
   satelliteInfoPanel.classList.remove('open')
 })
+
+async function updateNearestCity() {
+  if(!selectedSatelliteMarker) return
+  const satelliteData = selectedSatelliteMarker.userData
+  try{const response = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${satelliteData.latitude}&longitude=${satelliteData.longitude}&localityLanguage=en`
+    )
+  if(!response.ok) {
+    throw new Error('Failed to find nearest city')
+  }
+  const data = await response.json()
+  const city = data.city || data.locality || data.principalSubdivison || 'Unknown'
+  satelliteNearestCity.textContent = city
+  } catch(error) {
+    satelliteNearestCity.textContent = 'Unavailable'
+  }
+}
 
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}
