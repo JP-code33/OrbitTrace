@@ -352,6 +352,7 @@ renderer.domElement.addEventListener('click', (event) => {
     return
   }
   satelliteInfoPanel.classList.remove('open')
+  removeOrbitPaths()
 })
 
 async function updateNearestCity() {
@@ -410,6 +411,20 @@ addEventListener('wheel', (event) => {
   camera.position.copy(cameraZoomDirection).multiplyScalar(newDistance)
   camera.lookAt(0, 0, 0)
 })
+
+function removeOrbitPaths() {
+  if(orbitPath) {
+      earthGroup.remove(orbitPath)
+      orbitPath.geometry.dispose()
+      orbitPath = null
+    }
+
+    if(completedOrbitPath) {
+      earthGroup.remove(completedOrbitPath)
+      completedOrbitPath.geometry.dispose()
+      completedOrbitPath = null
+    }
+}
 
 const starGeometry = new THREE.BufferGeometry()
 const starMaterial = new THREE.PointsMaterial({color: 0xffffff})
