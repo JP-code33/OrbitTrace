@@ -25,6 +25,8 @@ const satelliteLatitude = document.getElementById('satelliteLatitude')
 const satelliteLongitude = document.getElementById('satelliteLongitude')
 const satelliteAltitude = document.getElementById('satelliteAltitude')
 const orbitTraceSatelliteSearchInput = document.getElementById('orbitTraceSatelliteSearchInput')
+const satelliteVelocity = document.getElementById('satelliteVelocity')
+const satelliteOrbitalPeriod = document.getElementById('satelliteOrbitalPeriod')
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -135,12 +137,16 @@ function updateRealSatellitePosition(marker) {
   if(!satrec) return
   const now = new Date()
   const positionAndVelocity = satellite.propagate(satrec, now)
-  if(!positionAndVelocity || !positionAndVelocity.position) return
+  if(!positionAndVelocity || !positionAndVelocity.position || !positionAndVelocity.velocity) return
   const gmst = satellite.gstime(now)
   const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
   const latitude = satellite.degreesLat(positionGd.latitude)
   const longitude = satellite.degreesLong(positionGd.longitude)
   const altitude = positionGd.height
+  const velocity = Math.sqrt(positionAndVelocity.velocity.x ** 2 + positionAndVelocity.velocity.y ** 2 + positionAndVelocity.velocity.z ** 2)
+  const orbitalPeriod = 1440 / marker.userData.MEAN_MOTION
+  marker.userData.velocity = velocity
+  marker.userData.orbitalPeriod = orbitalPeriod
   marker.userData.latitude = latitude
   marker.userData.longitude = longitude
   marker.userData.altitude = altitude
@@ -188,7 +194,9 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
   satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
   satelliteLatitude.textContent = `${selectedSatellite.latitude.toFixed(2)}°`
   satelliteLongitude.textContent = `${selectedSatellite.longitude.toFixed(2)}°`
-  satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)}km`
+  satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)} km`
+  satelliteVelocity.textContent = `${selectedSatellite.velocity.toFixed(2)} km/s`
+  satelliteOrbitalPeriod.textContent = `${selectedSatellite.orbitalPeriod.toFixed(2)} min`
 
   satelliteInfoPanel.classList.add('open')
 })
@@ -320,9 +328,11 @@ renderer.domElement.addEventListener('click', (event) => {
     const selectedSatellite = closestSatellite.userData
     satelliteName.textContent = selectedSatellite.OBJECT_NAME
     satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
-    satelliteLatitude.textContent = `${selectedSatellite.latitude}°`
-    satelliteLongitude.textContent = `${selectedSatellite.longitude}°`
-    satelliteAltitude.textContent = `${selectedSatellite.altitude}km`
+    satelliteLatitude.textContent = `${selectedSatellite.latitude.toFixed(2)}°`
+    satelliteLongitude.textContent = `${selectedSatellite.longitude.toFixed(2)}°`
+    satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)} km`
+    satelliteVelocity.textContent = `${selectedSatellite.velocity.toFixed(2)} km/s`
+    satelliteOrbitalPeriod.textContent = `${selectedSatellite.orbitalPeriod.toFixed(2)} min`
     satelliteInfoPanel.classList.add('open')
     return
   }
