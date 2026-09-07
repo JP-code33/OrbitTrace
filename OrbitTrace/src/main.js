@@ -72,7 +72,7 @@ atmosphere.scale.set(1.1, 1.1, 1.1)
 
 const satelliteGeometry = new THREE.SphereGeometry(0.015, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00})
-const selectedSatelliteMaterial = new THREE.MeshBasicMaterial({color: 0xEE4B2B})
+const selectedSatelliteMaterial = new THREE.MeshBasicMaterial({color: 0xFFED29})
 const satelliteMarkers = []
 let selectedSatelliteMarker = null
 let cameraFocusActive = false
@@ -80,8 +80,9 @@ let cameraFocusStart = new THREE.Vector3()
 let cameraFocusEnd = new THREE.Vector3()
 let cameraFocusProgress = 0
 let orbitPath = null
-const orbitPathMaterial = new THREE.LineBasicMaterial({color: 0xEE4B2B})
+const orbitPathMaterial = new THREE.LineDashedMaterial({color: 0x00ffff, dashSize: 0.15, gapSize: 0.08})
 let completedOrbitPath = null
+const completedOrbitPathMaterial = new THREE.LineBasicMaterial({color: 0xEE4B2B})
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -217,6 +218,7 @@ function createOrbitPath(marker) {
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(points)
   orbitPath = new THREE.Line(geometry, orbitPathMaterial)
+  orbitPath.computeLineDistances()
   earthGroup.add(orbitPath)
 }
 
@@ -244,7 +246,7 @@ function createCompletedOrbitPath(marker) {
     points.push(new THREE.Vector3(radius * Math.cos(lat) * Math.sin(lon), radius * Math.sin(lat), radius * Math.cos(lat) * Math.cos(lon)))
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(points)
-  completedOrbitPath = new THREE.Line(geometry, orbitPathMaterial)
+  completedOrbitPath = new THREE.Line(geometry, completedOrbitPathMaterial)
   earthGroup.add(completedOrbitPath)
 }
 
@@ -325,7 +327,7 @@ addEventListener('mousemove', (event) => {
 addEventListener('wheel', (event) => {
   const zoomAmount = event.deltaY * 0.01
   const currentDistance = camera.position.length()
-  const newDistance = THREE.MathUtils.clamp(currentDistance + zoomAmount, 6, 30)
+  const newDistance = THREE.MathUtils.clamp(currentDistance + zoomAmount, 6, 45)
   camera.position.copy(cameraZoomDirection).multiplyScalar(newDistance)
   camera.lookAt(0, 0, 0)
 })
