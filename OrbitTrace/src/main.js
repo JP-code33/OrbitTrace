@@ -148,6 +148,19 @@ function updateRealSatellitePosition(marker) {
 }
 
 orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
+
+  if(orbitPath) {
+    earthGroup.remove(orbitPath)
+    orbitPath.geometry.dispose()
+    orbitPath = null
+  }
+
+  if(completedOrbitPath) {
+    earthGroup.remove(completedOrbitPath)
+    completedOrbitPath.geometry.dispose()
+    completedOrbitPath = null
+  }
+
   if(event.key !== 'Enter') return
   const searchQuery = orbitTraceSatelliteSearchInput.value.trim().toLowerCase()
   if(!searchQuery) return
@@ -281,6 +294,29 @@ renderer.domElement.addEventListener('click', (event) => {
   })
 
   if(closestSatellite && closestDistance < 25) {
+
+    if(orbitPath) {
+      earthGroup.remove(orbitPath)
+      orbitPath.geometry.dispose()
+      orbitPath = null
+    }
+
+    if(completedOrbitPath) {
+      earthGroup.remove(completedOrbitPath)
+      completedOrbitPath.geometry.dispose()
+      completedOrbitPath = null
+    }
+
+    if(selectedSatelliteMarker) {
+      selectedSatelliteMarker.material = satelliteMaterial
+    }
+
+    closestSatellite.material = selectedSatelliteMaterial
+    selectedSatelliteMarker = closestSatellite
+    moveCameraToSatellite(closestSatellite)
+    createCompletedOrbitPath(closestSatellite)
+    createOrbitPath(closestSatellite)
+ 
     const selectedSatellite = closestSatellite.userData
     satelliteName.textContent = selectedSatellite.OBJECT_NAME
     satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
