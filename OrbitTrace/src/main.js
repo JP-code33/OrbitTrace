@@ -129,6 +129,7 @@ async function createSatellites() {
   satelliteMarkers.forEach((marker) => {
     updateRealSatellitePosition(marker)
   })
+  updateSatelliteInfoPanel()
   }, 1000)
 }
 
@@ -151,6 +152,17 @@ function updateRealSatellitePosition(marker) {
   marker.userData.longitude = longitude
   marker.userData.altitude = altitude
   updateSatellitePosition(marker, latitude, longitude, altitude)
+}
+
+function updateSatelliteInfoPanel() {
+  if(!selectedSatelliteMarker) return
+  const selectedSatellite = selectedSatelliteMarker.userData
+
+  satelliteLatitude.textContent = `${selectedSatellite.latitude.toFixed(2)}°`
+  satelliteLongitude.textContent = `${selectedSatellite.longitude.toFixed(2)}°`
+  satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)} km`
+  satelliteVelocity.textContent = `${selectedSatellite.velocity.toFixed(2)} km/s`
+  satelliteOrbitalPeriod.textContent = `${selectedSatellite.orbitalPeriod.toFixed(2)} min`
 }
 
 orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
