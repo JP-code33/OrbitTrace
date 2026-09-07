@@ -79,6 +79,8 @@ let cameraFocusActive = false
 let cameraFocusStart = new THREE.Vector3()
 let cameraFocusEnd = new THREE.Vector3()
 let cameraFocusProgress = 0
+let orbitPath = null
+const orbitPathMaterial = new THREE.LineBasicMaterial({color: 0xEE4B2B})
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -163,6 +165,7 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
   foundSatellite.material = selectedSatelliteMaterial
   selectedSatelliteMarker = foundSatellite
   moveCameraToSatellite(foundSatellite)
+  createOrbitPath(foundSatellite)
 
   const selectedSatellite = foundSatellite.userData
   satelliteName.textContent = selectedSatellite.OBJECT_NAME
@@ -184,6 +187,35 @@ function moveCameraToSatellite(marker) {
   cameraFocusEnd.copy(cameraZoomDirection).multiplyScalar(9)
   cameraFocusProgress = 0
   cameraFocusActive = true
+}
+
+function createOrbitPath(marker) {
+  const points = []
+  const now = new Date()
+
+  for(let i = 0; i <= 360; i++) {
+    const time = new Date(now.getTime() + i * 60000)
+    const positionAndVelocity = satellite.propagate(marker.userData.satrec, time)
+    
+    if(!positionAndVelocity || !positionAndVelocity.position) {
+      continue
+    }
+
+    const gmst = satellite.gstime(time)
+    const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
+    const latitude = satellite.degreesLat(positionGd.latitude)
+    const longitude = satellite.degreesLong(positionGd.longitude)
+    const altitude = positionGd.height
+    const earthRadius = 5
+    const altitudeScale = 5 / 6371
+    const radius = earthRadius + altitude * altitudeScale
+    const lat = THREE.MathUtils.degToRad(latitude)
+    const lon = THREE.MathUtils.degToRad(longitude + 90)
+    points.push(new THREE.Vector3(radius * Math.cos(lat) * Math.sin(lon), radius * Math.sin(lat), radius * Math.cos(lat) * Math.cos(lon)))
+  }
+  const geometry = new THREE.BufferGeometry().setFromPoints(points)
+  orbitPath = new THREE.Line(geometry, orbitPathMaterial)
+  earthGroup.add(orbitPath)
 }
 
 earthGroup.updateMatrixWorld(true)
