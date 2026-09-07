@@ -187,7 +187,8 @@ function moveCameraToSatellite(marker) {
   marker.getWorldPosition(satellitePosition)
   cameraZoomDirection.copy(satellitePosition).normalize()
   cameraFocusStart.copy(camera.position)
-  cameraFocusEnd.copy(cameraZoomDirection).multiplyScalar(9)
+  const focusDistance = 9 + (marker.userData.altitude / 6371) * 5
+  cameraFocusEnd.copy(cameraZoomDirection).multiplyScalar(focusDistance)
   cameraFocusProgress = 0
   cameraFocusActive = true
 }
