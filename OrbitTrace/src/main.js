@@ -5,7 +5,6 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import * as sunCalc from 'suncalc'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -376,7 +375,17 @@ async function updateNearestCity() {
   }
 }
 
+function updateSunDirection() {
+  const hour = new Date().getHours()
+  if(hour >= 6 && hour < 18) {
+    sphere.material.uniforms.sunDirection.value.set(1, 0, 0)
+  } else {
+    sphere.material.uniforms.sunDirection.value.set(-1, 0, 0)
+  }
+}
 
+updateSunDirection()
+setInterval(updateSunDirection, 60000)
 
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}
