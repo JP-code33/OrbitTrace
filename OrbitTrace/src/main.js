@@ -5,8 +5,7 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { MathNode } from 'three/webgpu'
-import { ThreeMFLoader } from 'three/examples/jsm/Addons.js'
+import * as sunCalc from 'suncalc'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -30,6 +29,7 @@ const orbitTraceSatelliteSearchInput = document.getElementById('orbitTraceSatell
 const satelliteVelocity = document.getElementById('satelliteVelocity')
 const satelliteOrbitalPeriod = document.getElementById('satelliteOrbitalPeriod')
 const satelliteNearestCity = document.getElementById('satelliteNearestCity')
+const nightTexture = textureLoader.load('/src/assests/nightMap.jpg')
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -59,6 +59,7 @@ const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), new THREE.Sha
   vertexShader, fragmentShader,
   uniforms: {
     globeTexture: {value: globeTexture},
+    nightTexture: {value: nightTexture},
     sunDirection: {value: new THREE.Vector3(1, 0, 0)}
   }
 }))
@@ -375,41 +376,7 @@ async function updateNearestCity() {
   }
 }
 
-function updateSunDirection() {
-  const now = new Date()
-  const julianDate = now.getDate() / 86400000 + 2440587.5
-  const centuries = (julianDate - 2451545.0) / 36525
-  let sunLongitude = 280.46646 + centuries * (36000.76983 + centuries * 0.0003032)
-  sunLongitude %= 360
-  const sunAnomaly = 357.52911 + centuries * (35999.05029 - 0.0001537 * centuries)
-  const anomalyRad = THREE.MathUtils.degToRad(sunAnomaly)
-  const equationOfCenter = Math.sin(anomalyRad) * (1.914602 - centuries * (0.004817 + 0.000014 * centuries)) + Math.sin(2 * anomalyRad) * (0.019993 - 0.000101 * centuries) + Math.sin(3 * anomalyRad) * 0.000289
-  const trueLongitude = sunLongitude + equationOfCenter
-  const omega = 125.04 - 1934.136 * centuries
-  const apparentLongitude = trueLongitude - 0.00569 - 0.00478 * Math.sin(THREE.MathUtils.degToRad(omega))
-  const meanObliquity = 23.439291 - 0.0130042 * centuries
-  const obliquity = meanObliquity + 0.00256 * Math.cos(THREE.MathUtils.degToRad(omega))
-  const apparentLongitudeRad = THREE.MathUtils.degToRad(apparentLongitude)
-  const oblitquityRad = THREE.MathUtils.degToRad(obliquity)
-  const declination = Math.asin(Math.sin(oblitquityRad) * Math.sin(apparentLongitudeRad))
-  const y = Math.tan(oblitquityRad / 2) ** 2
-  const meanLongitudeRad = THREE.MathUtils.degToRad(sunLongitude)
-  const equationOfTime = 4 * THREE.MathUtils.radToDeg(y * Math.sin(2 * meanLongitudeRad) - 2 * 0.016708634 * Math.sin(anomalyRad) + 4 * 0.016708634 * y * Math.sin(anomalyRad) * Math.cos(2 * meanLongitudeRad) - 0.5 * y * y * Math.sin(4 * meanLongitudeRad) - 1.25 * 0.016708634 * 0.016708634 * Math.sin(2 * anomalyRad))
-  const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getSeconds() / 3600 + now.getUTCMilliseconds() / 3600000
-  let solarTime = utcHours + equationOfTime / 60
-  let subsolarLongitude = -(solarTime - 12) * 15
-  subsolarLongitude = ((subsolarLongitude + 180) % 360) - 180
-  const latitude = declination
-  const longitude = THREE.MathUtils.degToRad(subsolarLongitude)
-  const x = Math.sin(latitude) * Math.cos(longitude)
-  const Y = Math.sin(latitude)
-  const z = -Math.cos(latitude) * Math.sin(longitude)
-  sphere.material.uniforms.sunDirection.value.set(z, Y, z).normalize
-}
 
-
-updateSunDirection()
-setInterval(updateSunDirection, 6000)
 
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}

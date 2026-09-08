@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "gsap": "^3.15.0",
-    "satellite.js": "^7.1.0"
+    "satellite.js": "^7.1.0",
+    "suncalc": "^2.0.2"
   }
 }
