@@ -147,3 +147,37 @@ html, body {
 #orbitTraceSearchInput:focus {
     border-color: #9cff00;
 }
+
+.groundTrackSection {
+    margin-top: 20px;
+}
+
+.groundTrackSection h3 {
+    margin-bottom: 20px;
+}
+
+.groundTrackMap {
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.groundTrackMap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.groundTrackMap {
+    position: relative;
+}
+
+#groundTrackCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}

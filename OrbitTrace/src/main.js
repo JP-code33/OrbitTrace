@@ -5,6 +5,8 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
+import { materialOpacity, userData } from 'three/tsl'
+import { update } from 'three/examples/jsm/libs/tween.module.js'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -29,6 +31,8 @@ const satelliteVelocity = document.getElementById('satelliteVelocity')
 const satelliteOrbitalPeriod = document.getElementById('satelliteOrbitalPeriod')
 const satelliteNearestCity = document.getElementById('satelliteNearestCity')
 const nightTexture = textureLoader.load('/src/assests/nightMap.jpg')
+const groundTrackCanvas = document.getElementById('groundTrackCanvas')
+const groundTrackContext = groundTrackCanvas.getContext('2d')
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -134,6 +138,12 @@ async function createSatellites() {
     updateRealSatellitePosition(marker)
   })
   updateSatelliteInfoPanel()
+  if(selectedSatelliteMarker) {
+    clearGroundTrack()
+    drawGroundTrack(selectedSatelliteMarker)
+    drawCompletedGroundTrack(selectedSatelliteMarker)
+    drawCurrentGroundTrackMarker(selectedSatelliteMarker)
+  }
   }, 1000)
 }
 
@@ -205,6 +215,10 @@ orbitTraceSatelliteSearchInput.addEventListener('keydown', (event) => {
   createOrbitPath(foundSatellite)
   createCompletedOrbitPath(foundSatellite)
   updateNearestCity()
+  clearGroundTrack()
+  drawGroundTrack(foundSatellite)
+  drawCompletedGroundTrack(foundSatellite)
+  drawCurrentGroundTrackMarker(foundSatellite)
 
   const selectedSatellite = foundSatellite.userData
   satelliteName.textContent = selectedSatellite.OBJECT_NAME
@@ -342,6 +356,10 @@ renderer.domElement.addEventListener('click', (event) => {
     createCompletedOrbitPath(closestSatellite)
     createOrbitPath(closestSatellite)
     updateNearestCity()
+    clearGroundTrack()
+    drawGroundTrack(closestSatellite)
+    drawCompletedGroundTrack(closestSatellite)
+    drawCurrentGroundTrackMarker(closestSatellite)
  
     const selectedSatellite = closestSatellite.userData
     satelliteName.textContent = selectedSatellite.OBJECT_NAME
@@ -386,6 +404,118 @@ function updateSunDirection() {
 
 updateSunDirection()
 setInterval(updateSunDirection, 60000)
+
+function resizeGroundTrackCanvas() {
+  groundTrackCanvas.width = groundTrackCanvas.clientWidth
+  groundTrackCanvas.height = groundTrackCanvas.clientHeight
+}
+
+resizeGroundTrackCanvas()
+window.addEventListener('resize', resizeGroundTrackCanvas)
+
+function getGroundTrackPosition(latitude, longitude) {
+  const x = ((longitude + 180) / 360) * groundTrackCanvas.width
+  const y = ((90 - latitude) / 180) * groundTrackCanvas.height
+  return{x, y}
+}
+
+function getGroundTrackPoints(marker) {
+  const points = []
+  const now = new Date()
+
+  for(let i = 0; i <= 180; i++) {
+    const time = new Date(now.getTime() + i * 60000)
+    const positionAndVelocity = satellite.propagate(marker.userData.satrec, time)
+
+    if(!positionAndVelocity || !positionAndVelocity.position) {
+      continue
+    }
+    const gmst = satellite.gstime(time)
+    const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
+    const latitude = satellite.degreesLat(positionGd.latitude)
+    const longitude = satellite.degreesLong(positionGd.longitude)
+    points.push({latitude, longitude})
+  }
+  return points
+}
+
+function clearGroundTrack() {
+  groundTrackContext.clearRect(0, 0, groundTrackCanvas.width, groundTrackCanvas.height)
+}
+
+function drawGroundTrack(marker) {
+  const points = getGroundTrackPoints(marker) 
+  groundTrackContext.beginPath()
+  points.forEach((point, index) => {
+    const mapPosition = getGroundTrackPosition(point.latitude, point.longitude)
+    if(index === 0) {
+      groundTrackContext.moveTo(mapPosition.x, mapPosition.y)
+    } else{
+      const previousPoint = points[index -1]
+
+      if(Math.abs(point.longitude - previousPoint.longitude) > 180) {
+        groundTrackContext.moveTo(mapPosition.x, mapPosition.y)
+      } else {
+        groundTrackContext.lineTo(mapPosition.x, mapPosition.y)
+      }
+    }
+  })
+  groundTrackContext.strokeStyle = '#00ffff'
+  groundTrackContext.lineWidth = 2
+  groundTrackContext.stroke()
+}
+
+function getCompletedGroundTrackPoints(marker) {
+  const points = []
+  const now = new Date()
+  for(let i = 90; i >= 0; i--) {
+    const time = new Date(now.getTime() - i * 60000)
+    const positionAndVelocity = satellite.propagate(marker.userData.satrec, time)
+    if(!positionAndVelocity || !positionAndVelocity.position) {
+      continue
+    }
+    const gmst = satellite.gstime(time)
+    const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
+    const latitude = satellite.degreesLat(positionGd.latitude)
+    const longitude = satellite.degreesLong(positionGd.longitude)
+    points.push({latitude, longitude})
+  }
+  return points
+}
+
+function drawCompletedGroundTrack(marker) {
+  const points = getCompletedGroundTrackPoints(marker)
+  groundTrackContext.beginPath()
+  points.forEach((point, index) => {
+    const mapPosition = getGroundTrackPosition(point.latitude, point.longitude)
+    if(index === 0) {
+      groundTrackContext.moveTo(mapPosition.x, mapPosition.y)
+    } else {
+      const previousPoint = points[index - 1]
+      if(Math.abs(point.longitude - previousPoint.longitude) > 180) {
+        groundTrackContext.moveTo(mapPosition.x, mapPosition.y)
+      } else {
+        groundTrackContext.lineTo(mapPosition.x, mapPosition.y)
+      }
+    }
+  })
+  groundTrackContext.strokeStyle = '#EE4B2B'
+  groundTrackContext.lineWidth = 2
+  groundTrackContext.stroke()
+}
+
+function drawCurrentGroundTrackMarker(marker) {
+  const latitude = marker.userData.latitude
+  const longitude = marker.userData.longitude
+  if(latitude === undefined || longitude === undefined) {
+    return
+  }
+  const mapPosition = getGroundTrackPosition(latitude, longitude)
+  groundTrackContext.beginPath()
+  groundTrackContext.arc(mapPosition.x, mapPosition.y, 5, 0, Math.PI * 2)
+  groundTrackContext.fillStyle = '#FFED29'
+  groundTrackContext.fill()
+}
 
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}
