@@ -31,6 +31,10 @@ const satelliteNearestCity = document.getElementById('satelliteNearestCity')
 const nightTexture = textureLoader.load('/src/assests/nightMap.jpg')
 const groundTrackCanvas = document.getElementById('groundTrackCanvas')
 const groundTrackContext = groundTrackCanvas.getContext('2d')
+const orbitTraceReplaySlider = document.getElementById('orbitTraceReplaySlider')
+const orbitTraceReplayTime = document.getElementById('orbitTraceReplayTime')
+const orbitTraceReplayButton = document.getElementById('orbitTraceReplayButton')
+console.log(orbitTraceReplaySlider)
 
 const globeTexture = textureLoader.load('/src/assets/earthMap.png', 
   () => {
@@ -78,9 +82,9 @@ const atmosphere = new THREE.Mesh(
 
 atmosphere.scale.set(1.1, 1.1, 1.1)
 
-const satelliteGeometry = new THREE.SphereGeometry(0.015, 8, 8)
+const satelliteGeometry = new THREE.SphereGeometry(0.023, 8, 8)
 const satelliteMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00})
-const selectedSatelliteMaterial = new THREE.MeshBasicMaterial({color: 0xFFED29})
+const selectedSatelliteMaterial = new THREE.MeshBasicMaterial({color: 0xDF00FE})
 const satelliteMarkers = []
 let selectedSatelliteMarker = null
 let cameraFocusActive = false
@@ -91,6 +95,9 @@ let orbitPath = null
 const orbitPathMaterial = new THREE.LineDashedMaterial({color: 0x00ffff, dashSize: 0.15, gapSize: 0.08})
 let completedOrbitPath = null
 const completedOrbitPathMaterial = new THREE.LineBasicMaterial({color: 0xEE4B2B})
+let replayActive = false
+let replayPlaying = false
+let replayMinutes = 0
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -133,6 +140,9 @@ async function createSatellites() {
 
   setInterval(() => {
   satelliteMarkers.forEach((marker) => {
+    if(marker === selectedSatelliteMarker && replayActive) {
+      return
+    }
     updateRealSatellitePosition(marker)
   })
   updateSatelliteInfoPanel()
@@ -509,6 +519,24 @@ function drawCurrentGroundTrackMarker(marker) {
   groundTrackContext.fill()
 }
 
+function updateSatellitePositionTime(marker, time) {
+  const satrec = marker.userData.satrec
+  if(!satrec) return
+  const positionAndVelocity = satellite.propagate(satrec, time)
+  if(!positionAndVelocity || !positionAndVelocity.position) {
+    return
+  }
+  const gmst = satellite.gstime(time)
+  const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst)
+  const latitude = satellite.degreesLat(positionGd.latitude)
+  const longitude = satellite.degreesLong(positionGd.longitude)
+  const altitude = positionGd.height
+  marker.userData.latitude = latitude
+  marker.userData.longitude = longitude
+  marker.userData.altitude = altitude
+  updateSatellitePosition(marker, latitude, longitude, altitude)
+}
+
 const mouse = {x: 0, y: 0, previousX: 0, previousY: 0, isDragging: false, didMove: false}
 const globeRotation ={x: 0, y: 0}
 earthGroup.rotation.set(0, 0, 0)
@@ -548,6 +576,69 @@ addEventListener('wheel', (event) => {
   camera.position.copy(cameraZoomDirection).multiplyScalar(newDistance)
   camera.lookAt(0, 0, 0)
 })
+
+orbitTraceReplaySlider.addEventListener('input', () => {
+  if(!selectedSatelliteMarker) return
+  replayActive = true
+  replayPlaying = false
+  replayMinutes = Number(orbitTraceReplaySlider.value)
+  const replayDate = new Date(Date.now() + replayMinutes * 60000)
+  updateSatellitePositionTime(selectedSatelliteMarker, replayDate)
+  
+  if(replayMinutes === 0) {
+    orbitTraceReplayTime.textContent = 'Now'
+  } else if(replayMinutes < 0) {
+    orbitTraceReplayTime.textContent = `${Math.abs(replayMinutes)} m ago`
+  } else {
+    orbitTraceReplayTime.textContent = `In ${replayMinutes} m`
+  }
+
+  clearGroundTrack()
+  drawCompletedGroundTrack(selectedSatelliteMarker)
+  drawCurrentGroundTrackMarker(selectedSatelliteMarker)
+  drawGroundTrack(selectedSatelliteMarker)
+})
+
+orbitTraceReplayButton.addEventListener('click', () => {
+  if(!selectedSatelliteMarker) return
+  
+  if(replayPlaying) {
+    replayPlaying = false
+    orbitTraceReplayButton.textContent = 'Play'
+    return
+  }
+
+  if(replayMinutes === 0) {
+    replayMinutes = -90
+    orbitTraceReplaySlider.value = -90
+  }
+
+  replayActive = true
+  replayPlaying = true
+  orbitTraceReplayButton.textContent = 'Pause'
+})
+
+setInterval(() => {
+  if(!replayActive || !replayPlaying || !selectedSatelliteMarker) {
+    return
+  }
+  replayMinutes += 1
+  if(replayMinutes >= 0) {
+    replayMinutes = 0
+    replayPlaying = false
+    replayActive = false
+    orbitTraceReplayButton.textContent = 'Play'
+  }
+
+  orbitTraceReplaySlider.value= replayMinutes
+  const replayDate = new Date(Date.now() + replayMinutes * 60000)
+  updateSatellitePositionTime(selectedSatelliteMarker, replayDate)
+  orbitTraceReplayTime.textContent = replayMinutes === 0 ? 'Now' : `${Math.abs(replayMinutes)} m ago`
+  clearGroundTrack()
+  drawGroundTrack(selectedSatelliteMarker)
+  drawCurrentGroundTrackMarker(selectedSatelliteMarker)
+  drawCompletedGroundTrack(selectedSatelliteMarker)
+}, 500)
 
 function removeOrbitPaths() {
   if(orbitPath) {

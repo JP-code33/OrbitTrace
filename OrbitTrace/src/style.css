@@ -181,3 +181,35 @@ html, body {
     width: 100%;
     height: 100%;
 }
+
+.orbitTraceReplaySection {
+    margin-top: 50px;
+}
+
+.orbitTraceReplaySection h3 {
+    margin-bottom: 10px;
+}
+
+#orbitTraceReplaySlider {
+    width: 100%;
+    cursor: pointer;
+}
+
+.orbitTraceReplayControls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    gap: 10px;
+}
+
+#orbitTraceReplayTime {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+#orbitTraceReplayButton {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
