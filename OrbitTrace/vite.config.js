@@ -6,7 +6,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            'satellite.js/wasm-build': 'satellite.js/dist'
+            'satellite.js': 'satellite.js/dist/satellite.es.js'
         }
     }
 })

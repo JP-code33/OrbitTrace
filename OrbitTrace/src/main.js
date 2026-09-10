@@ -4,7 +4,7 @@ import fragmentShader from '/src/shaders/fragment.glsl?raw'
 import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
-import * as satellite from 'satellite.js/dist/satellite.min.js'
+import * as satellite from 'satellite.js/dist/satellite.es.js'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
