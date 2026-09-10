@@ -63,7 +63,6 @@ const sphere = new THREE.Mesh(new THREE.SphereGeometry(5, 50, 50), new THREE.Sha
   vertexShader, fragmentShader,
   uniforms: {
     globeTexture: {value: globeTexture},
-    nightTexture: {value: nightTexture},
     sunDirection: {value: new THREE.Vector3(1, 0, 0)}
   }
 }))
