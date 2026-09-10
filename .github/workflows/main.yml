@@ -5,7 +5,7 @@ on:
     branches:
       - main
 
-permissions: 
+permissions:
   contents: read
   pages: write
   id-token: write
@@ -24,7 +24,7 @@ jobs:
 
       - name: Setup Node
         uses: actions/setup-node@v4
-        with: 
+        with:
           node-version: 20
           cache: npm
 
@@ -37,13 +37,12 @@ jobs:
         working-directory: ./OrbitTrace
 
       - name: Setup Pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./OrbitTrace/dist
 
       - name: Deploy
         uses: actions/deploy-pages@v4
-  
