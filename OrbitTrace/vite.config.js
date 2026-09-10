@@ -1,12 +1,15 @@
 import {defineConfig} from 'vite'
 
 export default defineConfig({
+    worker: {
+        format: "es"
+    },
     optimizeDeps: {
-        exclude: ['satellite.js']
+        exclude: ["satellite.js"]
     },
     resolve: {
         alias: {
-            'satellite.js': 'satellite.js/dist/satellite.es.js'
+            "satellite.js": "satellite.js/dist/satellite.es.js"
         }
     }
 })
