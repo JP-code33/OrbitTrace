@@ -28,7 +28,6 @@ const orbitTraceSatelliteSearchInput = document.getElementById('orbitTraceSatell
 const satelliteVelocity = document.getElementById('satelliteVelocity')
 const satelliteOrbitalPeriod = document.getElementById('satelliteOrbitalPeriod')
 const satelliteNearestCity = document.getElementById('satelliteNearestCity')
-const nightTexture = textureLoader.load('/public/assest/nightMap.jpg')
 const groundTrackCanvas = document.getElementById('groundTrackCanvas')
 const groundTrackContext = groundTrackCanvas.getContext('2d')
 const orbitTraceReplaySlider = document.getElementById('orbitTraceReplaySlider')
@@ -36,7 +35,7 @@ const orbitTraceReplayTime = document.getElementById('orbitTraceReplayTime')
 const orbitTraceReplayButton = document.getElementById('orbitTraceReplayButton')
 console.log(orbitTraceReplaySlider)
 
-const globeTexture = textureLoader.load('/public/assets/earthMap.png', 
+const globeTexture = textureLoader.load('/assets/earthMap.png', 
   () => {
     loadingProgress.style.width = '100%'
     loadingPercent.textContent = '100%'
