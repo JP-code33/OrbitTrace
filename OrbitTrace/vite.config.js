@@ -1,4 +1,5 @@
 import {defineConfig} from 'vite'
+import path from 'path'
 
 export default defineConfig({
     worker: {
@@ -9,7 +10,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            "satellite.js": "satellite.js/dist/satellite.es.js"
+            "satellite.js": path.resolve(__dirname, "./node_modules/satellite.js/dist/satellite.es.js")
         }
     }
 })
