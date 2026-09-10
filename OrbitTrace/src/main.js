@@ -5,8 +5,6 @@ import atmosphereVertexShader from '/src/shaders/atmosphereVertex.glsl?raw'
 import atmosphereFragmentShader from '/src/shaders/atmosphereFragment.glsl?raw'
 import './style.css'
 import * as satellite from 'satellite.js'
-import { materialOpacity, userData } from 'three/tsl'
-import { update } from 'three/examples/jsm/libs/tween.module.js'
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 1000)
@@ -305,75 +303,69 @@ function createCompletedOrbitPath(marker) {
 
 earthGroup.updateMatrixWorld(true)
 camera.updateMatrixWorld(true)
+const orbitTraceRaycaster = new THREE.Raycaster()
+const orbitTraceMouse = new THREE.Vector2()
 
 renderer.domElement.addEventListener('click', (event) => {
   if(mouse.didMove) return
+
   const rect = renderer.domElement.getBoundingClientRect()
-  
-  const clickX = event.clientX - rect.left
-  const clickY = event.clientY - rect.top
-  let closestSatellite = null
-  let closestDistance = Infinity
-
-  satelliteMarkers.forEach((marker) => {
-    const screenPosition = new THREE.Vector3()
-    marker.getWorldPosition(screenPosition)
-    screenPosition.project(camera)
-    if(screenPosition.z < -1 || screenPosition.z > 1) {
-      return
-    }
-    const satelliteX = (screenPosition.x + 1) / 2 * rect.width
-    const satelliteY = (-screenPosition.y + 1) / 2 * rect.height
-    const distance = Math.sqrt((clickX - satelliteX) ** 2 + (clickY - satelliteY) ** 2)
-
-    if(distance < closestDistance) {
-      closestDistance = distance
-      closestSatellite = marker
-    }
-  })
-
-  if(closestSatellite && closestDistance < 25) {
-
-    if(orbitPath) {
-      earthGroup.remove(orbitPath)
-      orbitPath.geometry.dispose()
-      orbitPath = null
-    }
-
-    if(completedOrbitPath) {
-      earthGroup.remove(completedOrbitPath)
-      completedOrbitPath.geometry.dispose()
-      completedOrbitPath = null
-    }
-
-    if(selectedSatelliteMarker) {
-      selectedSatelliteMarker.material = satelliteMaterial
-    }
-
-    closestSatellite.material = selectedSatelliteMaterial
-    selectedSatelliteMarker = closestSatellite
-    moveCameraToSatellite(closestSatellite)
-    createCompletedOrbitPath(closestSatellite)
-    createOrbitPath(closestSatellite)
-    updateNearestCity()
-    clearGroundTrack()
-    drawGroundTrack(closestSatellite)
-    drawCompletedGroundTrack(closestSatellite)
-    drawCurrentGroundTrackMarker(closestSatellite)
- 
-    const selectedSatellite = closestSatellite.userData
-    satelliteName.textContent = selectedSatellite.OBJECT_NAME
-    satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
-    satelliteLatitude.textContent = `${selectedSatellite.latitude.toFixed(2)}°`
-    satelliteLongitude.textContent = `${selectedSatellite.longitude.toFixed(2)}°`
-    satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)} km`
-    satelliteVelocity.textContent = `${selectedSatellite.velocity.toFixed(2)} km/s`
-    satelliteOrbitalPeriod.textContent = `${selectedSatellite.orbitalPeriod.toFixed(2)} min`
-    satelliteInfoPanel.classList.add('open')
+  orbitTraceMouse.x = ((event.clientX - rect.left) / rect.width) * 2 -1 
+  orbitTraceMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+  orbitTraceRaycaster.setFromCamera(orbitTraceMouse, camera)
+  const satelliteIntersections = orbitTraceRaycaster.intersectObjects(satelliteMarkers, false)
+  if(satelliteIntersections.length === 0) {
+    satelliteInfoPanel.classList.remove('open')
+    removeOrbitPaths()
     return
   }
-  satelliteInfoPanel.classList.remove('open')
-  removeOrbitPaths()
+  const closestIntersection = satelliteIntersections[0]
+  const closestSatellite = closestIntersection.object
+  const earthIntersections = orbitTraceRaycaster.intersectObject(sphere, false)
+
+  if(earthIntersections.length > 0 && earthIntersections[0].distance < closestIntersection.distance) {
+    satelliteInfoPanel.classList.remove('open')
+    removeOrbitPaths()
+    return
+  }
+
+  if(orbitPath) {
+    earthGroup.remove(orbitPath)
+    orbitPath.geometry.dispose()
+    orbitPath = null
+  }
+
+  if(completedOrbitPath) {
+    earthGroup.remove(completedOrbitPath)
+    completedOrbitPath.geometry.dispose()
+    completedOrbitPath = null
+  }
+
+  if(selectedSatelliteMarker) {
+    selectedSatelliteMarker.material = satelliteMaterial
+  }
+
+  closestSatellite.material = selectedSatelliteMaterial
+  selectedSatelliteMarker = closestSatellite
+  moveCameraToSatellite(closestSatellite)
+  createCompletedOrbitPath(closestSatellite)
+  createOrbitPath(closestSatellite)
+  updateNearestCity()
+  clearGroundTrack()
+  drawGroundTrack(closestSatellite)
+  drawCompletedGroundTrack(closestSatellite)
+  drawCurrentGroundTrackMarker(closestSatellite)
+ 
+  const selectedSatellite = closestSatellite.userData
+  satelliteName.textContent = selectedSatellite.OBJECT_NAME
+  satelliteNoradId.textContent = selectedSatellite.NORAD_CAT_ID
+  satelliteLatitude.textContent = `${selectedSatellite.latitude.toFixed(2)}°`
+  satelliteLongitude.textContent = `${selectedSatellite.longitude.toFixed(2)}°`
+  satelliteAltitude.textContent = `${selectedSatellite.altitude.toFixed(2)} km`
+  satelliteVelocity.textContent = `${selectedSatellite.velocity.toFixed(2)} km/s`
+  satelliteOrbitalPeriod.textContent = `${selectedSatellite.orbitalPeriod.toFixed(2)} min`
+  satelliteInfoPanel.classList.add('open')
+  return
 })
 
 async function updateNearestCity() {
