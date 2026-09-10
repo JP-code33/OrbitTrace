@@ -98,6 +98,9 @@ const completedOrbitPathMaterial = new THREE.LineBasicMaterial({color: 0xEE4B2B}
 let replayActive = false
 let replayPlaying = false
 let replayMinutes = 0
+let cameraFollowActive = false
+const cameraFollowOffset = new THREE.Vector3()
+const cameraFollowTarget = new THREE.Vector3()
 
 function updateSatellitePosition(marker, latitude, longitude, altitude) {
   const earthRadius = 5
@@ -245,6 +248,7 @@ let cameraZoomDirection = new THREE.Vector3(0, 0, 1)
 function moveCameraToSatellite(marker) {
   const satellitePosition = new THREE.Vector3()
   marker.getWorldPosition(satellitePosition)
+  cameraFollowTarget.copy(satellitePosition)
   cameraZoomDirection.copy(satellitePosition).normalize()
   cameraFocusStart.copy(camera.position)
   const focusDistance = 9 + (marker.userData.altitude / 6371) * 5
@@ -353,10 +357,13 @@ renderer.domElement.addEventListener('click', (event) => {
 
   if(selectedSatelliteMarker) {
     selectedSatelliteMarker.material = satelliteMaterial
+    selectedSatelliteMarker.scale.set(1, 1, 1)
   }
 
   closestSatellite.material = selectedSatelliteMaterial
   selectedSatelliteMarker = closestSatellite
+  selectedSatelliteMarker.scale.set(2.5, 2.5, 2.5)
+  cameraFollowActive = false
   moveCameraToSatellite(closestSatellite)
   createCompletedOrbitPath(closestSatellite)
   createOrbitPath(closestSatellite)
@@ -677,12 +684,25 @@ function animate() {
     const progress = Math.min(cameraFocusProgress, 1)
     const smoothProgress = progress * progress * (3 - 2 * progress)
     camera.position.lerpVectors(cameraFocusStart, cameraFocusEnd, smoothProgress)
-    camera.lookAt(0, 0, 0)
+    camera.lookAt(cameraFollowTarget)
     
     if(progress >= 1) {
       cameraFocusActive = false
       cameraZoomDirection.copy(camera.position).normalize()
+
+      if(selectedSatelliteMarker) {
+        selectedSatelliteMarker.getWorldPosition(cameraFollowTarget)
+        cameraFollowOffset.copy(camera.position).sub(cameraFollowTarget)
+        cameraFollowActive = true
+      }
     }
+
+  if(cameraFollowActive && selectedSatelliteMarker) {
+    selectedSatelliteMarker.getWorldPosition(cameraFollowTarget)
+    const desiredCameraPosition = cameraFollowTarget.clone().add(cameraFollowOffset)
+    camera.position.lerp(desiredCameraPosition, 0.08)
+    camera.lookAt(cameraFollowTarget)
+  }
   }
 }
 animate()
